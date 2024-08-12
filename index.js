@@ -76,7 +76,8 @@ app.use(bodyParser.json({limit: "30mb", extended: true}));
 app.use(bodyParser.urlencoded({limit: "30mb", extended: true}));
 // Allow requests from the frontend origin (http://localhost:3000)
 app.use(cors({ origin: 'http://localhost:3000' }));
-app.use("/assets", express.static(path.join(__dirname, 'public/assets')));
+// app.use("/assets", express.static(path.join(__dirname, 'public/assets')));
+app.use(express.static(path.join(__dirname, './build')));
 
 
 //FILE  STORAGE CONFIG
@@ -90,6 +91,14 @@ const storage = multer.diskStorage({
 });
 const upload = multer({storage});
 
+// Define your CSP policy
+const cspPolicy = "default-src 'self'; img-src 'self' data: https://embed.tawk.to; script-src 'self' https://embed.tawk.to; connect-src 'self' https://embed.tawk.to; style-src 'self' 'unsafe-inline';";
+
+// Apply CSP policy to all responses
+app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy", cspPolicy);
+  next();
+});
 
 //Login 
 app.post("/auth/createUser", CreateUser);
@@ -220,7 +229,9 @@ app.get("/auth/most-visiting-patients", getMostVisitingPatients);
 app.get("/auth/most-conducted-tests", mostTestConducted);
 app.post("/auth/send-whatsapp", sendWhatsappPromotion);
 
-
+app.get('*', function(req, res) {
+    res.sendFile(path.join(__dirname,'./build/index.html'))
+})
 
 // MONGOOSE SETUP
 const PORT = process.env.PORT || 6001;
