@@ -212,7 +212,7 @@ export const printPrescription = async (req, res) => {
         // Define the HTML content with formatted bill date and horizontal line
         const htmlContent = `
          <div style="text-align: center;">
-            <span style="font-weight: bold; font-size: 30px;">Care Conquer</span> <br> <br>
+            <span style="font-weight: bold; font-size: 30px;">DEMO</span> <br> <br>
             <span>46/4, Hosur Rd, Kudlu Gate, Krishna Reddy Industrial Area, H.S</span><br>
             <span>, R Extension, Bengaluru, Karnataka 560068</span><br>
             <span>Email: careconqueronline@gmail.com</span><br>
