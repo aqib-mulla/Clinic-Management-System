@@ -7,8 +7,9 @@ import multer from 'multer';
 import  helmet from 'helmet'
 import morgan from 'morgan';
 import path from "path";
+import fs from 'fs';
 import { fileURLToPath } from 'url';
-import register from "./controllers/auth.js"
+import register, { getByBill, getPatient } from "./controllers/auth.js"
 import tests from "./controllers/tests.js"
 import createdoctor from './controllers/createdoctor.js';
 import { getdoctor } from './controllers/createdoctor.js';
@@ -44,10 +45,10 @@ import { collectDueAmount, reports } from './controllers/bill.js';
 import testDetails from './controllers/labResultentry.js';
 import { saveResult } from './controllers/labResultentry.js';
 import { getEnteredResult } from './controllers/labResultentry.js';
-import dailyCollectionreport, { downloadDailyCollection, downloadTestList, downloadGroupList, downloadMonthlyCollection, dailyRegistration, downloadDailyRegistration } from './controllers/reports.js';
-import { monthlyCollectionreport , testperformance,sendWhatsappPromotion, mostTestConducted,patientPerformance, getMostVisitingPatients} from './controllers/reports.js';
-import { monthlydueCollectionreport } from './controllers/reports.js';
-import { doctorWiseCollection, downloadDoctorWise, deptWiseCollection, downloadDeptWiseReport } from './controllers/reports.js';
+import dailyCollectionreport, { downloadDailyCollection, downloadTestList, downloadGroupList, downloadMonthlyCollection, dailyRegistration, downloadDailyRegistration, uploadReports } from './controllers/reports.js';
+import { searchMedicines,monthlyCollectionreport , testperformance,sendWhatsappPromotion, mostTestConducted,patientPerformance, getMostVisitingPatients} from './controllers/reports.js';
+import { monthlydueCollectionreport, getAllMedicines } from './controllers/reports.js';
+import {addMedicine, doctorWiseCollection, downloadDoctorWise, deptWiseCollection, downloadDeptWiseReport } from './controllers/reports.js';
 import { updatebillTest } from './controllers/bill.js';
 import { labReport, sendEmail, sendCultureEmail, sendWhatsapp, sendCultureWhatsapp, WHlabReport, cultureWHlabReport, cultureNHlabReport } from './controllers/labReport.js';
 import { CreateUser } from './controllers/login.js';
@@ -61,7 +62,7 @@ import { Login } from './controllers/login.js';
 import { billPrint } from './controllers/bill.js';
 import { createBill } from './controllers/auth.js';
 import { addFees, getFeesList, feesMaster,getFees, deleteFees, filterFees, updateFees, getDepartments } from './controllers/feesMaster.js';
-import { savePrescription, getPrescription, printPrescription } from './controllers/patientPrescription.js';
+import { savePrescription, getPrescription, printPrescription, getPrescriptionList, printPrescriptions } from './controllers/patientPrescription.js';
 
 // CONFIGURATIONS
 const __filename = fileURLToPath(import.meta.url);
@@ -76,29 +77,52 @@ app.use(bodyParser.json({limit: "30mb", extended: true}));
 app.use(bodyParser.urlencoded({limit: "30mb", extended: true}));
 // Allow requests from the frontend origin (http://localhost:3000)
 app.use(cors({ origin: 'http://localhost:3000' }));
-// app.use("/assets", express.static(path.join(__dirname, 'public/assets')));
-app.use(express.static(path.join(__dirname, './build')));
+app.use("/assets", express.static(path.join(__dirname, 'public/assets')));
 
 
 //FILE  STORAGE CONFIG
+// const storage = multer.diskStorage({
+//     destination:function(req, file, cb){
+//         cb(null, "public/assests");
+//     },
+//     filename:function(req, file, cb){
+//         cb(null,file.originalname)
+//     }
+// });
+
+// Set up Multer storage
+// const storage = multer.diskStorage({
+//     destination: (req, file, cb) => {
+//         const uploadDir = path.join(__dirname, "reports");
+//         if (!fs.existsSync(uploadDir)) {
+//             fs.mkdirSync(uploadDir);
+//         }
+//         cb(null, uploadDir);
+//     },
+//     filename: (req, file, cb) => {
+//         cb(null, `${req.body.patientId}${path.extname(file.originalname)}`);
+//     },
+// });
+
+// const upload = multer({storage});
+
 const storage = multer.diskStorage({
-    destination:function(req, file, cb){
-        cb(null, "public/assests");
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, "reports");
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir);
+        }
+        cb(null, uploadDir);
     },
-    filename:function(req, file, cb){
-        cb(null,file.originalname)
-    }
+    filename: (req, file, cb) => {
+        const date = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
+        cb(null, `${req.body.patientId}_${date}${path.extname(file.originalname)}`);
+    },
 });
-const upload = multer({storage});
 
-// Define your CSP policy
-const cspPolicy = "default-src 'self'; img-src 'self' data: https://embed.tawk.to; script-src 'self' https://embed.tawk.to; connect-src 'self' https://embed.tawk.to; style-src 'self' 'unsafe-inline';";
+const upload = multer({ storage });
 
-// Apply CSP policy to all responses
-app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy", cspPolicy);
-  next();
-});
+
 
 //Login 
 app.post("/auth/createUser", CreateUser);
@@ -118,6 +142,7 @@ app.post("/auth/register", register);
 app.post("/auth/oldBill", createBill);
 app.get("/auth/next-patient-id", nextpId);
 app.get("/auth/findPatientByid/:id", getPatientById);
+app.get("/auth/findPatientByBill/:id", getByBill);
 app.put("/auth/update-patient/:id", updatePatient);
 app.get("/auth/get-patients", getpatients);
 app.delete('/auth/delete-patient/:pId', deletePatient);
@@ -221,6 +246,9 @@ app.delete('/auth/deleteFees/:id', deleteFees);
 app.post("/auth/save-prescription", savePrescription);
 app.get("/auth/get-prescriptions/:patientId", getPrescription);
 app.post("/auth/print-prescriptions/:patientId", printPrescription);
+app.post("/auth/print-prescription/:patientId", printPrescriptions);
+app.get("/auth/prescriptionsList/:patientId", getPrescriptionList);
+app.get("/auth/findPatientByidnewVisit/:id", getPatient );
 
 
 app.get("/auth/performance", testperformance);
@@ -229,9 +257,53 @@ app.get("/auth/most-visiting-patients", getMostVisitingPatients);
 app.get("/auth/most-conducted-tests", mostTestConducted);
 app.post("/auth/send-whatsapp", sendWhatsappPromotion);
 
-app.get('*', function(req, res) {
-    res.sendFile(path.join(__dirname,'./build/index.html'))
-})
+app.post("/auth/add-medicine", addMedicine);
+app.get("/auth/medicines", getAllMedicines);
+app.get("/auth/search-medicines", searchMedicines);
+
+// app.post("/auth/upload-lab-reports", uploadReports);
+app.post("/auth/upload-lab-reports", upload.array("labReports"), async (req, res) => {
+    try {
+        console.log("Incoming request body:", req.body);
+        console.log("Uploaded files:", req.files);
+
+        if (!req.files || !req.body.patientId) {
+            return res.status(400).json({ error: "No files uploaded or patient ID missing" });
+        }
+
+        return res.json({ success: true, message: "Lab reports uploaded successfully!" });
+    } catch (error) {
+        console.error("File upload error:", error);
+        return res.status(500).json({ error: "Internal server error. Failed to upload files." });
+    }
+});
+
+
+
+// Route to find the PDF by patientId
+app.post("/auth/find-pdf/:patientId", async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        
+        // Get absolute path
+        const pdfPath = path.resolve(__dirname, "reports", `${patientId}.pdf`);
+
+        // Check if the file exists
+        if (!fs.existsSync(pdfPath)) {
+            return res.status(404).json({ message: "PDF file not found" });
+        }
+
+        // Send the PDF file as response
+        res.setHeader("Content-Type", "application/pdf");
+        res.sendFile(pdfPath);
+    } catch (error) {
+        console.error("Error fetching PDF:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+
+
 
 // MONGOOSE SETUP
 const PORT = process.env.PORT || 6001;

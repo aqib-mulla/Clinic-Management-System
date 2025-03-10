@@ -4,8 +4,10 @@ import PatientReg from "../models/PatientReg.js";
 import Bill from "../models/Bill.js";
 import BillDetail from "../models/BillDetails.js";
 import CreateProfile from "../models/CreateProfile.js";
+import Medicine from "../models/Medicine.js";
 import XLSX from 'xlsx';
 import fs from 'fs';// Import the xlsx library
+import path from "path";
 
 
 function formatDate(date) {
@@ -1429,5 +1431,79 @@ export const sendWhatsappPromotion = async (req, res) => {
       });
     }
   };
+
+  export const addMedicine = async (req, res) => {
+
+    try {
+        const { name, composition } = req.body;
+    
+        // Validate request data
+        if (!name || !composition) {
+          return res.status(400).json({ message: "All fields are required" });
+        }
+    
+        const newMedicine = new Medicine({ name, composition });
+        await newMedicine.save();
+        res.status(201).json({ message: "Medicine saved successfully", newMedicine });
+      } catch (error) {
+        res.status(500).json({ message: "Server Error", error });
+      }
+};
+
+export const getAllMedicines = async (req, res) => {
+    try {
+        const medicines = await Medicine.find(); 
+        res.json(medicines);
+    } catch (error) {
+        console.error("Error fetching medicines:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+export const searchMedicines = async (req, res) => {
+    try {
+        const { query } = req.query; // Extract search term from query params
+
+        if (!query) {
+            return res.status(400).json({ message: "Query parameter is required" });
+        }
+
+        // Search medicines by name (case insensitive)
+        const medicines = await Medicine.find({
+            name: { $regex: query, $options: "i" }, // Case-insensitive search
+        }).limit(10); // Limit results to avoid performance issues
+
+        res.json(medicines);
+    } catch (error) {
+        console.error("Error fetching medicines:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+
+export const uploadReports = async (req, res) => {
+
+    try {
+        console.log('Incoming request body:', req.body);
+        console.log('Incoming files:', req.files);
+
+        if (!req.files || !req.body.patientId) {
+            return res.status(400).json({ error: 'No files uploaded or patient ID missing' });
+        }
+
+        const patientId = req.body.patientId;
+        const files = Array.isArray(req.files.labReports) ? req.files.labReports : [req.files.labReports];
+
+        for (const file of files) {
+            const filePath = `./reports/${patientId}${path.extname(file.name)}`;
+            await file.mv(filePath);
+        }
+
+        return res.json({ success: true, message: 'Lab reports uploaded successfully!' });
+    } catch (error) {
+        console.error('File upload error:', error);
+        return res.status(500).json({ error: 'Internal server error. Failed to upload files.' });
+    }
+};
 
 export default dailyCollectionreport

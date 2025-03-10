@@ -1,6 +1,7 @@
 import PatientReg from "../models/PatientReg.js";
 import Bill from "../models/Bill.js";
 import BillDetail from "../models/BillDetails.js";
+import Prescription from '../models/prescriptionModel.js';
 import shortid from 'shortid';
 
 
@@ -253,6 +254,153 @@ export const getPatientById = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch patient' });
     }
 }
+
+export const getPatient = async (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+    try {
+        const pId = req.params.id; // Get the patient ID from the request parameters
+
+        // Fetch the patient details
+        const patient = await PatientReg.findById(pId);
+
+        if (!patient) {
+            return res.status(404).json({ error: 'Patient not found' });
+        }
+
+        // Fetch the latest billNO from the Prescription model (globally)
+        const lastPrescription = await Prescription.findOne()
+            .sort({ createdAt: -1 }) // Get the most recent prescription
+            .select('billNO');
+
+        // Convert billNO to a number and increment by 1
+        const lastBillNO = lastPrescription ? Number(lastPrescription.billNO) || 0 : 0;
+        const newBillNO = lastBillNO + 1;
+
+
+        // Send response with the correct structure expected by the frontend
+        res.json({
+            pId: patient._id,
+            pSal: patient.pSalutation, // Adjust field names based on your schema
+            pName: patient.pName,
+            pAge: patient.pAge,
+            pGender: patient.pGender,
+            pNum: patient.pNum,
+            pEmail: patient.pEmail,
+            billId: newBillNO, // Sending latest bill number
+            drName: patient.doctorName // Assuming doctor name is stored in `doctorName`
+        });
+    } catch (error) {
+        console.error('Error fetching patient:', error);
+        res.status(500).json({ error: 'Failed to fetch patient' });
+    }
+};
+
+// export const getByBill = async (req, res) => {
+//     try {
+//         const id = req.params.id;
+
+//         const bill = await Bill.findById(id)
+//             .populate('refId', ' _id pName pNum pAge pGender pSalutation pEmail') // Reference to the PatientReg model, selecting only pName and pNum fields
+//             .populate('doctorName') // Reference to the Doctor model, selecting only doctorName field
+//             .exec();
+
+//         if (!bill) {
+//             return res.status(404).json({ message: 'Bill not found' });
+//         }
+
+//         function formatDates(dateString) {
+//             const date = new Date(dateString);
+//             const day = date.getDate();
+//             const month = date.getMonth() + 1; // Adding 1 because getMonth() returns 0-based index
+//             const year = date.getFullYear();
+//             return `${day}/${month}/${year}`;
+//         }
+
+
+//         const data = {
+//             data: {
+//                 billId: bill.billId,
+//                 pId: bill.refId._id,
+//                 pName: bill.refId.pName,
+//                 pSal: bill.refId.pSalutation,
+//                 pAge: bill.refId.pAge,
+//                 pGender: bill.refId.pGender,
+//                 drName: bill.doctorName.drName,
+//                 pNum: bill.refId.pNum,
+//                 pEmail: bill.refId.pEmail,
+//                 billAmount: bill.billAmount,
+//                 amountDue: bill.amountDue,
+//                 amountPaid: bill.amountPaid,
+//                 discountAmount: bill.discountAmount,
+//                 billDate: formatDates(bill.createdAt),
+//                 // Add other properties from the bill and populated models
+//             },
+//         };
+
+//         res.json(data);
+//         // return data;
+//     } catch (error) {
+//         console.error('Error fetching bill details:', error);
+//         res.status(500).json({ error: 'Failed to fetch bill details' });
+//     }
+// };
+
+export const getByBill = async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        // Fetch the last bill number from the Prescription model
+        const lastPrescription = await Prescription.findOne().sort({ billId: -1 }).exec();
+        const lastBillId = lastPrescription ? Number(lastPrescription.billNO) : 0; // Convert to number
+        const newBillId = lastBillId + 1;
+
+        const bill = await Bill.findById(id)
+            .populate('refId', ' _id pName pNum pAge pGender pSalutation pEmail') // Reference to the PatientReg model, selecting only pName and pNum fields
+            .populate('doctorName') // Reference to the Doctor model, selecting only doctorName field
+            .exec();
+
+        if (!bill) {
+            return res.status(404).json({ message: 'Bill not found' });
+        }
+
+        function formatDates(dateString) {
+            const date = new Date(dateString);
+            const day = date.getDate();
+            const month = date.getMonth() + 1; // Adding 1 because getMonth() returns 0-based index
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        const data = {
+            data: {
+                billId: newBillId,
+                pId: bill.refId._id,
+                pName: bill.refId.pName,
+                pSal: bill.refId.pSalutation,
+                pAge: bill.refId.pAge,
+                pGender: bill.refId.pGender,
+                // drName: bill.doctorName.drName,
+                drName: bill.doctorName._id,
+                pNum: bill.refId.pNum,
+                pEmail: bill.refId.pEmail,
+                billAmount: bill.billAmount,
+                amountDue: bill.amountDue,
+                amountPaid: bill.amountPaid,
+                discountAmount: bill.discountAmount,
+                billDate: formatDates(bill.createdAt),
+                // Add other properties from the bill and populated models
+            },
+        };
+
+        res.json(data);
+        // return data;
+    } catch (error) {
+        console.error('Error fetching bill details:', error);
+        res.status(500).json({ error: 'Failed to fetch bill details' });
+    }
+};
+
 
 export const updatePatient = async (req, res) => {
     const pId = req.params.id;
