@@ -463,7 +463,7 @@ export const savePrescription = async (req, res) => {
         const billNO = lastPrescription ? Number(lastPrescription.billNO) + 1 : 1; // If no prescription exists, start with 1
 
         // Find existing prescription
-        const existingPrescription = await Prescription.findOne({ patientId });
+        const existingPrescription = await Prescription.findOne({ billNO });
 
         if (existingPrescription) {
             // Update existing prescription
