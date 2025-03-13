@@ -123,7 +123,14 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// Define your CSP policy
+const cspPolicy = "default-src 'self'; img-src 'self' data: https://embed.tawk.to; script-src 'self' https://embed.tawk.to; connect-src 'self' https://embed.tawk.to; style-src 'self' 'unsafe-inline';";
 
+// Apply CSP policy to all responses
+app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy", cspPolicy);
+  next();
+});
 
 //Login 
 app.post("/auth/createUser", CreateUser);
