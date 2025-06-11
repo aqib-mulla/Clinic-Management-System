@@ -107,18 +107,49 @@ app.use(express.static(path.join(__dirname, './build')));
 
 // const upload = multer({storage});
 
+// const storage = multer.diskStorage({
+//     destination: (req, file, cb) => {
+//         const uploadDir = path.join(__dirname, "reports");
+//         if (!fs.existsSync(uploadDir)) {
+//             fs.mkdirSync(uploadDir);
+//         }
+//         cb(null, uploadDir);
+//     },
+//     filename: (req, file, cb) => {
+//         const date = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
+//         cb(null, `${req.body.patientId}_${date}${path.extname(file.originalname)}`);
+//     },
+// });
+
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, "reports");
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir);
-        }
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const date = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
-        cb(null, `${req.body.patientId}_${date}${path.extname(file.originalname)}`);
-    },
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, "reports");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, "reports");
+    const patientId = req.body.patientId;
+    const extension = path.extname(file.originalname);
+    const baseFilename = `${patientId}_`;
+
+    // Read existing files in the directory
+    fs.readdir(uploadDir, (err, files) => {
+      if (err) return cb(err);
+
+      // Filter files starting with patientId_
+      const matchingFiles = files.filter(f =>
+        f.startsWith(baseFilename)
+      );
+
+      const serial = matchingFiles.length + 1;
+      const finalFilename = `${patientId}_${serial}${extension}`;
+
+      cb(null, finalFilename);
+    });
+  },
 });
 
 const upload = multer({ storage });
@@ -289,25 +320,51 @@ app.post("/auth/upload-lab-reports", upload.array("labReports"), async (req, res
 
 
 // Route to find the PDF by patientId
-app.post("/auth/find-pdf/:patientId", async (req, res) => {
-    try {
-        const { patientId } = req.params;
+// app.post("/auth/find-pdf/:patientId", async (req, res) => {
+//     try {
+//         const { patientId } = req.params;
         
-        // Get absolute path
-        const pdfPath = path.resolve(__dirname, "reports", `${patientId}.pdf`);
+//         // Get absolute path
+//         const pdfPath = path.resolve(__dirname, "reports", `${patientId}.pdf`);
 
-        // Check if the file exists
-        if (!fs.existsSync(pdfPath)) {
-            return res.status(404).json({ message: "PDF file not found" });
-        }
+//         // Check if the file exists
+//         if (!fs.existsSync(pdfPath)) {
+//             return res.status(404).json({ message: "PDF file not found" });
+//         }
 
-        // Send the PDF file as response
-        res.setHeader("Content-Type", "application/pdf");
-        res.sendFile(pdfPath);
-    } catch (error) {
-        console.error("Error fetching PDF:", error);
-        res.status(500).json({ message: "Internal server error" });
+//         // Send the PDF file as response
+//         res.setHeader("Content-Type", "application/pdf");
+//         res.sendFile(pdfPath);
+//     } catch (error) {
+//         console.error("Error fetching PDF:", error);
+//         res.status(500).json({ message: "Internal server error" });
+//     }
+// });
+
+app.post("/auth/find-pdf/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const reportsDir = path.resolve(__dirname, "reports");
+
+    // Read all files in reports directory
+    const files = fs.readdirSync(reportsDir);
+
+    // Find the first file that starts with patientId + "_"
+    const matchedFile = files.find(file => file.startsWith(`${patientId}_`) && file.endsWith(".pdf"));
+
+    if (!matchedFile) {
+      return res.status(404).json({ message: "PDF file not found" });
     }
+
+    const pdfPath = path.join(reportsDir, matchedFile);
+
+    // Send the matched PDF file
+    res.setHeader("Content-Type", "application/pdf");
+    res.sendFile(pdfPath);
+  } catch (error) {
+    console.error("Error fetching PDF:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 app.get('*', function(req, res) {
