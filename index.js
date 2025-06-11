@@ -319,7 +319,7 @@ app.get("/auth/search-medicines", searchMedicines);
 // });
 
 app.post("/auth/upload-lab-reports", async (req, res) => {
-    try {
+       try {
         console.log('Incoming request body:', req.body);
         console.log('Incoming files:', req.files);
 
@@ -328,30 +328,36 @@ app.post("/auth/upload-lab-reports", async (req, res) => {
             return res.status(400).json({ error: 'No files uploaded or patient ID missing' });
         }
 
-        const uploadDir = path.join(__dirname, 'reports');
+        const uploadDir = './reports';
+
+        // Create the reports folder if it doesn't exist
         if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir);
+            fs.mkdirSync(uploadDir, { recursive: true });
         }
 
         const files = Array.isArray(req.files.labReports)
             ? req.files.labReports
             : [req.files.labReports];
 
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const extension = path.extname(file.name);
-            const newFilename = `${patientId}_${i + 1}${extension}`;
-            const savePath = path.join(uploadDir, newFilename);
+        // Get existing files for this patient to assign serial number
+        const existingFiles = fs.readdirSync(uploadDir).filter(file =>
+            file.startsWith(`${patientId}_`)
+        );
+        let serial = existingFiles.length;
 
-            await file.mv(savePath);
+        for (const file of files) {
+            serial += 1;
+            const extension = path.extname(file.name);
+            const filename = `${patientId}_${serial}${extension}`;
+            const filePath = `${uploadDir}/${filename}`;
+            await file.mv(filePath);
         }
 
         return res.json({ success: true, message: 'Lab reports uploaded successfully!' });
     } catch (error) {
         console.error('File upload error:', error);
         return res.status(500).json({ error: 'Internal server error. Failed to upload files.' });
-    }
-});
+    }});
 
 
 
