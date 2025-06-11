@@ -78,6 +78,7 @@ app.use(bodyParser.urlencoded({limit: "30mb", extended: true}));
 // Allow requests from the frontend origin (http://localhost:3000)
 app.use(cors({ origin: 'http://localhost:3000' }));
 // app.use("/assets", express.static(path.join(__dirname, 'public/assets')));
+app.use('/reports', express.static(path.join(__dirname, 'reports')));
 app.use(express.static(path.join(__dirname, './build')));
 
 
