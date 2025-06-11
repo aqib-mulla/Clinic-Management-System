@@ -341,30 +341,67 @@ app.post("/auth/upload-lab-reports", upload.array("labReports"), async (req, res
 //     }
 // });
 
+// app.post("/auth/find-pdf/:patientId", async (req, res) => {
+//   try {
+//     const { patientId } = req.params;
+//     const reportsDir = path.resolve(__dirname, "reports");
+
+//     // Read all files in reports directory
+//     const files = fs.readdirSync(reportsDir);
+
+//     // Find the first file that starts with patientId + "_"
+//     const matchedFile = files.find(file => file.startsWith(`${patientId}_`) && file.endsWith(".pdf"));
+
+//     if (!matchedFile) {
+//       return res.status(404).json({ message: "PDF file not found" });
+//     }
+
+//     const pdfPath = path.join(reportsDir, matchedFile);
+
+//     // Send the matched PDF file
+//     res.setHeader("Content-Type", "application/pdf");
+//     res.sendFile(pdfPath);
+//   } catch (error) {
+//     console.error("Error fetching PDF:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+
 app.post("/auth/find-pdf/:patientId", async (req, res) => {
   try {
     const { patientId } = req.params;
     const reportsDir = path.resolve(__dirname, "reports");
 
-    // Read all files in reports directory
     const files = fs.readdirSync(reportsDir);
 
-    // Find the first file that starts with patientId + "_"
-    const matchedFile = files.find(file => file.startsWith(`${patientId}_`) && file.endsWith(".pdf"));
+    // Match all PDFs starting with patientId_
+    const matchedFiles = files.filter(file =>
+      file.startsWith(`${patientId}_`) && file.endsWith(".pdf")
+    );
 
-    if (!matchedFile) {
-      return res.status(404).json({ message: "PDF file not found" });
+    if (matchedFiles.length === 0) {
+      return res.status(404).json({ message: "No PDF files found" });
     }
 
-    const pdfPath = path.join(reportsDir, matchedFile);
-
-    // Send the matched PDF file
-    res.setHeader("Content-Type", "application/pdf");
-    res.sendFile(pdfPath);
+    // Return just file names (or URLs if you're using static hosting)
+    return res.json({ files: matchedFiles });
   } catch (error) {
-    console.error("Error fetching PDF:", error);
+    console.error("Error fetching PDFs:", error);
     res.status(500).json({ message: "Internal server error" });
   }
+});
+
+
+app.get("/auth/get-pdf/:filename", (req, res) => {
+  const { filename } = req.params;
+  const filePath = path.resolve(__dirname, "reports", filename);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: "File not found" });
+  }
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.sendFile(filePath);
 });
 
 app.get('*', function(req, res) {
