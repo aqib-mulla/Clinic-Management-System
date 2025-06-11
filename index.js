@@ -302,62 +302,62 @@ app.get("/auth/medicines", getAllMedicines);
 app.get("/auth/search-medicines", searchMedicines);
 
 // app.post("/auth/upload-lab-reports", uploadReports);
-// app.post("/auth/upload-lab-reports", upload.array("labReports"), async (req, res) => {
-//     try {
-//         console.log("Incoming request body:", req.body);
-//         console.log("Uploaded files:", req.files);
+app.post("/auth/upload-lab-reports", upload.array("labReports"), async (req, res) => {
+    try {
+        console.log("Incoming request body:", req.body);
+        console.log("Uploaded files:", req.files);
 
-//         if (!req.files || !req.body.patientId) {
-//             return res.status(400).json({ error: "No files uploaded or patient ID missing" });
+        if (!req.files || !req.body.patientId) {
+            return res.status(400).json({ error: "No files uploaded or patient ID missing" });
+        }
+
+        return res.json({ success: true, message: "Lab reports uploaded successfully!" });
+    } catch (error) {
+        console.error("File upload error:", error);
+        return res.status(500).json({ error: "Internal server error. Failed to upload files." });
+    }
+});
+
+// app.post("/auth/upload-lab-reports", async (req, res) => {
+//        try {
+//         console.log('Incoming request body:', req.body);
+//         console.log('Incoming files:', req.files);
+
+//         const patientId = req.body.patientId;
+//         if (!req.files || !patientId) {
+//             return res.status(400).json({ error: 'No files uploaded or patient ID missing' });
 //         }
 
-//         return res.json({ success: true, message: "Lab reports uploaded successfully!" });
+//         const uploadDir = './reports';
+
+//         // Create the reports folder if it doesn't exist
+//         if (!fs.existsSync(uploadDir)) {
+//             fs.mkdirSync(uploadDir, { recursive: true });
+//         }
+
+//         const files = Array.isArray(req.files.labReports)
+//             ? req.files.labReports
+//             : [req.files.labReports];
+
+//         // Get existing files for this patient to assign serial number
+//         const existingFiles = fs.readdirSync(uploadDir).filter(file =>
+//             file.startsWith(`${patientId}_`)
+//         );
+//         let serial = existingFiles.length;
+
+//         for (const file of files) {
+//             serial += 1;
+//             const extension = path.extname(file.name);
+//             const filename = `${patientId}_${serial}${extension}`;
+//             const filePath = `${uploadDir}/${filename}`;
+//             await file.mv(filePath);
+//         }
+
+//         return res.json({ success: true, message: 'Lab reports uploaded successfully!' });
 //     } catch (error) {
-//         console.error("File upload error:", error);
-//         return res.status(500).json({ error: "Internal server error. Failed to upload files." });
-//     }
-// });
-
-app.post("/auth/upload-lab-reports", async (req, res) => {
-       try {
-        console.log('Incoming request body:', req.body);
-        console.log('Incoming files:', req.files);
-
-        const patientId = req.body.patientId;
-        if (!req.files || !patientId) {
-            return res.status(400).json({ error: 'No files uploaded or patient ID missing' });
-        }
-
-        const uploadDir = './reports';
-
-        // Create the reports folder if it doesn't exist
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        const files = Array.isArray(req.files.labReports)
-            ? req.files.labReports
-            : [req.files.labReports];
-
-        // Get existing files for this patient to assign serial number
-        const existingFiles = fs.readdirSync(uploadDir).filter(file =>
-            file.startsWith(`${patientId}_`)
-        );
-        let serial = existingFiles.length;
-
-        for (const file of files) {
-            serial += 1;
-            const extension = path.extname(file.name);
-            const filename = `${patientId}_${serial}${extension}`;
-            const filePath = `${uploadDir}/${filename}`;
-            await file.mv(filePath);
-        }
-
-        return res.json({ success: true, message: 'Lab reports uploaded successfully!' });
-    } catch (error) {
-        console.error('File upload error:', error);
-        return res.status(500).json({ error: 'Internal server error. Failed to upload files.' });
-    }});
+//         console.error('File upload error:', error);
+//         return res.status(500).json({ error: 'Internal server error. Failed to upload files.' });
+//     }});
 
 
 
