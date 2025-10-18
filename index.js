@@ -82,7 +82,7 @@ app.use(cors({ origin: 'http://localhost:3000' }));
 // app.use("/assets", express.static(path.join(__dirname, 'public/assets')));
 // app.use('reports', express.static(path.join(__dirname, 'reports')));
 app.use('/reports', express.static(path.join(process.cwd(), 'reports')));
-app.use(express.static(path.join(__dirname, './build')));
+// app.use(express.static(path.join(__dirname, './build')));
 
 
 //FILE  STORAGE CONFIG
@@ -451,9 +451,9 @@ app.get("/auth/get-pdf/:filename", (req, res) => {
   res.sendFile(filePath);
 });
 
-app.get('*', function(req, res) {
-    res.sendFile(path.join(__dirname,'./build/index.html'))
-})
+// app.get('*', function(req, res) {
+//     res.sendFile(path.join(__dirname,'./build/index.html'))
+// })
 
 
 // MONGOOSE SETUP
@@ -479,8 +479,12 @@ mongoose.connect(process.env.MONGO_URL, {
 
   app.use('/auth', pharmacyRoutes);
   
-
+app.use(express.static(path.join(__dirname, 'build')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
   app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 })
 .catch((err) => console.log('❌ Error connecting to clinic DB:', err.message));
+
 
