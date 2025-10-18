@@ -422,6 +422,106 @@ import doctorDetail from "../models/CreateDoctor.js";
 //     }
 // };
 
+// export const savePrescription = async (req, res) => {
+//     try {
+//         const {
+//             patientId,
+//             billId,
+//             content,
+//             complaints,
+//             clinicalFindings,
+//             diagnosis,
+//             knownDiagnosis,
+//             selectedTests,
+//             vitals,
+//             medicines,
+//             doctorName
+//         } = req.body;
+
+//         const {
+//             bloodPressure,
+//             heartRate,
+//             temperature,
+//             respiratoryRate,
+//             height,
+//             weight,
+//         } = vitals;
+
+//         // Validate required medicine fields
+//         if (medicines && medicines.some(med => !med.medicineName || !med.composition)) {
+//             return res.status(400).json({ error: "Medicine name and composition are required" });
+//         }
+
+//         // Process selectedTests with additional fields
+//         const formattedTests = selectedTests.map(test => ({
+//             testId: test._id,
+//             testName: test.name || test.groupName || test.profileName || test.feesName,
+//         }));
+
+//         // Find the last billNO
+//         const lastPrescription = await Prescription.findOne().sort({ billNO: -1 }).limit(1);
+//         const billNO = lastPrescription ? Number(lastPrescription.billNO) + 1 : 1; // If no prescription exists, start with 1
+
+//         // Find existing prescription
+//         const existingPrescription = await Prescription.findOne({ patientId });
+
+//         if (existingPrescription) {
+//             // Update existing prescription
+//             existingPrescription.set({
+//                 billId,
+//                 billNO, // Use the incremented billNO
+//                 content,
+//                 bloodPressure,
+//                 heartRate,
+//                 temperature,
+//                 respiratoryRate,
+//                 height,
+//                 weight,
+//                 complaints,
+//                 clinicalFindings,
+//                 diagnosis,
+//                 knownDiagnosis,
+//                 medicines,
+//                 doctorName,
+//                 selectedTests: formattedTests
+//             });
+
+//             const updatedPrescription = await existingPrescription.save();
+//             return res.json(updatedPrescription);
+//         } else {
+//             // Create new prescription
+//             const newPrescription = new Prescription({
+//                 patientId,
+//                 billId,
+//                 billNO, // Use the incremented billNO
+//                 content,
+//                 bloodPressure,
+//                 heartRate,
+//                 temperature,
+//                 respiratoryRate,
+//                 height,
+//                 weight,
+//                 complaints,
+//                 clinicalFindings,
+//                 diagnosis,
+//                 knownDiagnosis,
+//                 medicines,
+//                 doctorName,
+//                 selectedTests: formattedTests
+//             });
+
+//             const savedPrescription = await newPrescription.save();
+//             return res.json(savedPrescription);
+//         }
+//     } catch (error) {
+//         console.error('Error saving prescription:', error);
+//         return res.status(500).json({
+//             error: 'Internal Server Error',
+//             message: error.message
+//         });
+//     }
+// };
+
 export const savePrescription = async (req, res) => {
     try {
         const {
@@ -448,7 +548,7 @@ export const savePrescription = async (req, res) => {
         } = vitals;
 
         // Validate required medicine fields
-        if (medicines && medicines.some(med => !med.medicineName || !med.composition)) {
+        if (medicines && medicines.some(med => !med.medicineName)) {
             return res.status(400).json({ error: "Medicine name and composition are required" });
         }
 
