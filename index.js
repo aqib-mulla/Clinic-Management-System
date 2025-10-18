@@ -63,6 +63,8 @@ import { billPrint } from './controllers/bill.js';
 import { createBill } from './controllers/auth.js';
 import { addFees, getFeesList, feesMaster,getFees, deleteFees, filterFees, updateFees, getDepartments } from './controllers/feesMaster.js';
 import { savePrescription, getPrescription, printPrescription, getPrescriptionList, printPrescriptions } from './controllers/patientPrescription.js';
+import { connectPharmacyDB } from './config/pharmacyDB.js';
+import pharmacyRoutes from './routes/pharmacyRoutes.js';
 
 // CONFIGURATIONS
 const __filename = fileURLToPath(import.meta.url);
@@ -455,12 +457,30 @@ app.get('*', function(req, res) {
 
 
 // MONGOOSE SETUP
+// const PORT = process.env.PORT || 6001;
+// mongoose.connect(process.env.MONGO_URL,{
+// useNewUrlParser: true,
+// useUnifiedTopology: true,
+// })
+// .then(()=>{
+// app.listen(PORT, () => console.log(`Server Port: ${PORT}`));
+// })
+// .catch((error)=> console.log(`${error} did not connect`))
+
 const PORT = process.env.PORT || 6001;
-mongoose.connect(process.env.MONGO_URL,{
-useNewUrlParser: true,
-useUnifiedTopology: true,
+
+mongoose.connect(process.env.MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 })
-.then(()=>{
-app.listen(PORT, () => console.log(`Server Port: ${PORT}`));
+.then(async () => {
+  console.log('✅ Connected to clinic DB');
+  await connectPharmacyDB(); // connect secondary pharmacy DB
+
+  app.use('/auth', pharmacyRoutes);
+  
+
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 })
-.catch((error)=> console.log(`${error} did not connect`))
+.catch((err) => console.log('❌ Error connecting to clinic DB:', err.message));
+
