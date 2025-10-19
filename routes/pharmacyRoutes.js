@@ -29,7 +29,7 @@ router.get('/available', async (req, res) => {
     const stock = await MedicineAvailable.distinct('itemName', { qty: { $gt: 0 } });
 
     // Optional: limit to first 20 and sort alphabetically
-    const limitedStock = stock.sort().slice(0, 20);
+    const limitedStock = stock.slice(0, 20);
 
     res.json(limitedStock);
   } catch (error) {
@@ -40,4 +40,5 @@ router.get('/available', async (req, res) => {
 
 
 export default router;
+
 
