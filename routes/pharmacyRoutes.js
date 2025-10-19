@@ -28,10 +28,7 @@ router.get('/available', async (req, res) => {
     // Get distinct item names where qty > 0
     const stock = await MedicineAvailable.distinct('itemName', { qty: { $gt: 0 } });
 
-    // Optional: limit to first 20 and sort alphabetically
-    const limitedStock = stock.slice(0, 20);
-
-    res.json(limitedStock);
+    res.json(stock);
   } catch (error) {
     console.error('❌ Error fetching pharmacy stock:', error.message);
     res.status(500).json({ error: 'Failed to fetch pharmacy stock' });
@@ -40,5 +37,6 @@ router.get('/available', async (req, res) => {
 
 
 export default router;
+
 
 
